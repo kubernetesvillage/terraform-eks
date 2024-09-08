@@ -44,12 +44,20 @@ Before you begin, ensure you have the following:
     Deploy the EKS cluster by running the following command:
 
     ```bash
-    terraform apply
+    terraform apply --auto-approve
     ```
 
     You will be prompted to confirm the deployment. Type `yes` to proceed.
 
-6. **Access the EKS Cluster:**
+6. **Deploy the pre-deploy script:**
+
+    Run the pre-deploy.sh script to install necessary binaries
+
+    ```bash
+    chmod +x pre-deploy.sh
+    bash pre-deploy.sh
+    ```
+7. **Access the EKS Cluster:**
 
     After the deployment is complete, you can access your EKS cluster using the AWS CLI. Run the following command to configure `kubectl`:
 
