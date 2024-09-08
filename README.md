@@ -7,15 +7,15 @@ This repository contains Terraform code to provision an Amazon Elastic Kubernete
 Before you begin, ensure you have the following:
 
 - AWS CLI configured with appropriate access permissions
-- Terraform installed (version 0.14+ recommended)
-- IAM permissions to create EKS resources and related AWS infrastructure (e.g., EC2, VPC, IAM roles)
+- Terraform installed 
+- Admin privileges
 
 ## Setup Instructions
 
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/terraform-eks.git
+    git clone https://github.com/kubernetesvillage/terraform-eks
     cd terraform-eks/eks-cluster
     ```
 
@@ -79,3 +79,4 @@ terraform destroy --auto-approve
 ## License
 
 This project is licensed under the Apache License 2.0. See the LICENSE file for details.
+
