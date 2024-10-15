@@ -1,7 +1,8 @@
 # Terraform EKS
 
 This repository contains Terraform code to provision an Amazon Elastic Kubernetes Service (EKS) cluster. The configuration deploys an EKS cluster with the necessary AWS resources, including worker nodes and networking.
-
+> - Author: Anjali singh Shukla
+  
 ## Prerequisites
 
 Before you begin, ensure you have the following:
