@@ -67,7 +67,22 @@ module "eks" {
       desired_size  = 2
     }
   }
+  access_entries = {
+    # Define an access entry for the AdminUser IAM principal
+    admin_user_access = {
+      principal_arn = "arn:aws:iam::$AccountID:user/$User_Role"
+
+      # Attach the AmazonEKSClusterAdminPolicy to give cluster-admin rights
+      policy_associations = {
+        cluster_admin = {
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
+        }
+      }
+    }
 }
+}
+
 
 # IAM Roles and Policies for EBS CSI driver
 data "aws_iam_policy" "ebs_csi_policy" {
