@@ -15,7 +15,7 @@ resource "random_string" "suffix" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "5.4.0"
+  version = "5.21.0"
 
   name = "securitydojo-vpc"
 
@@ -44,10 +44,10 @@ module "vpc" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.21.0"
+  version = "20.36.0"
 
   cluster_name    = local.cluster_name
-  cluster_version = "1.28"
+  cluster_version = "1.32"
 
   vpc_id                         = module.vpc.vpc_id
   subnet_ids                     = concat(module.vpc.private_subnets, module.vpc.public_subnets) # This allows the cluster to span both private and public subnets
@@ -88,7 +88,7 @@ module "irsa-ebs-csi" {
 resource "aws_eks_addon" "ebs-csi" {
   cluster_name             = module.eks.cluster_name
   addon_name               = "aws-ebs-csi-driver"
-  addon_version            = "v1.26.0-eksbuild.1"
+  addon_version            = "v1.42.0-eksbuild.1"
   service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
   tags = {
     "eks_addon" = "ebs-csi"
@@ -99,7 +99,7 @@ resource "aws_eks_addon" "ebs-csi" {
 resource "aws_eks_addon" "cni" {
   cluster_name       = module.eks.cluster_name
   addon_name         = "vpc-cni"
-  addon_version      = "v1.16.2-eksbuild.1"
+  addon_version      = "v1.19.4-eksbuild.1"
   resolve_conflicts  = "OVERWRITE"
   configuration_values = jsonencode({
     enableNetworkPolicy : "true",
