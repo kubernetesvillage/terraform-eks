@@ -87,5 +87,5 @@ terraform destroy --auto-approve
 
 ## License
 
-This project is licensed under the GPL. See the LICENSE file for details.
+This project is licensed under the GPL-3.0. See the LICENSE file for details.
 
