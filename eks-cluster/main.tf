@@ -5,7 +5,7 @@ provider "aws" {
 data "aws_availability_zones" "available" {}
 
 locals {
-  cluster_name = "securitydojo-eks-${random_string.suffix.result}"
+  cluster_name = "peachycloudsecurity-eks-${random_string.suffix.result}"
 }
 
 resource "random_string" "suffix" {
@@ -17,7 +17,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.4.0"
 
-  name = "securitydojo-vpc"
+  name = "peachycloudsecurity-vpc"
 
   cidr = "10.0.0.0/16"
   azs  = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -44,27 +44,29 @@ module "vpc" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.21.0"
+  version = "21.0.0"
 
-  cluster_name    = local.cluster_name
-  cluster_version = "1.28"
+  name    = local.cluster_name
+  kubernetes_version = "1.34"
+  upgrade_policy = {
+    support_type = "STANDARD"
+  }
 
   vpc_id                         = module.vpc.vpc_id
   subnet_ids                     = concat(module.vpc.private_subnets, module.vpc.public_subnets) # This allows the cluster to span both private and public subnets
-  cluster_endpoint_public_access = true
-
-  eks_managed_node_group_defaults = {
-    ami_type = "AL2_x86_64"
-  }
+  endpoint_public_access         = true
 
   eks_managed_node_groups = {
     public_group = {
-      name          = "public-node-group"
-      instance_types = ["t3.medium"]
-      subnet_ids    = module.vpc.public_subnets
-      min_size      = 1
-      max_size      = 2
-      desired_size  = 2
+      name             = "public-node-group"
+      instance_types   = ["t3.medium"]
+      subnet_ids       = module.vpc.public_subnets
+      min_size         = 1
+      max_size         = 2
+      desired_size     = 2
+      ami_type         = "AL2_x86_64"
+      kubernetes_version = "1.34"
+      use_latest_ami_release_version = false
     }
   }
 }
@@ -88,7 +90,7 @@ module "irsa-ebs-csi" {
 resource "aws_eks_addon" "ebs-csi" {
   cluster_name             = module.eks.cluster_name
   addon_name               = "aws-ebs-csi-driver"
-  addon_version            = "v1.26.0-eksbuild.1"
+  addon_version            = "v1.52.1-eksbuild.1"
   service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
   tags = {
     "eks_addon" = "ebs-csi"
@@ -99,8 +101,7 @@ resource "aws_eks_addon" "ebs-csi" {
 resource "aws_eks_addon" "cni" {
   cluster_name       = module.eks.cluster_name
   addon_name         = "vpc-cni"
-  addon_version      = "v1.16.2-eksbuild.1"
-  resolve_conflicts  = "OVERWRITE"
+  addon_version      = "v1.20.4-eksbuild.1"
   configuration_values = jsonencode({
     enableNetworkPolicy : "true",
   })
