@@ -15,6 +15,25 @@ echo ""
 exec > >(tee -i install.log)
 exec 2>&1
 
+# Attempt to fix Yarn APT key/source if a Yarn repo is present and the keyring is missing.
+# This function is idempotent and will not abort the script if it fails.
+fix_yarn_key_if_needed() {
+    if grep -R --quiet "dl.yarnpkg.com" /etc/apt 2>/dev/null; then
+        sudo rm -f /etc/apt/sources.list.d/yarn.list
+        echo "Fixing Yarn APT repo (non-fatal)..."
+        sudo mkdir -p /usr/share/keyrings
+        if curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg; then
+            echo "Yarn keyring added."
+            echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian stable main" \
+                | sudo tee /etc/apt/sources.list.d/yarn.list > /dev/null
+            sudo apt-get update || true
+        else
+            echo "Warning: failed to fix Yarn key; continuing..."
+        fi
+    fi
+    return 0
+}
+
 # Function to install AWS CLI
 install_aws() {
     echo "Installing AWS CLI..."
@@ -49,31 +68,60 @@ install_kubectl() {
     echo "kubectl installation complete."
 }
 
+# Function to install Terraform
+install_terraform() {
+    echo "Installing Terraform..."
+    if [[ "$OS" == "ubuntu" ]]; then
+        fix_yarn_key_if_needed || true
+        sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update || echo "Warning: apt-get update reported errors; attempting to install terraform anyway..."
+        sudo apt-get install -y terraform || { echo "Terraform install failed. Exiting."; exit 1; }
+    elif [[ "$OS" == "amzn" ]]; then
+        sudo yum install -y yum-utils
+        sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+        sudo yum -y install terraform || { echo "Terraform install failed. Exiting."; exit 1; }
+    else
+        sudo yum install -y yum-utils
+        sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+        sudo yum -y install terraform || { echo "Terraform install failed. Exiting."; exit 1; }
+    fi
+    echo "Terraform installation complete."
+}
+
 # Function to install OpenTofu
 install_opentofu() {
     echo "Installing OpenTofu..."
-    sudo yum update -y
-    sudo yum install -y yum-utils uuid jq || { echo "Package installation failed. Exiting."; exit 1; }
-
-    # Download the installer script
-    curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh || { echo "OpenTofu installer download failed. Exiting."; exit 1; }
-
-    # Give execution permissions
-    chmod +x install-opentofu.sh
-
-    # Run the installer using RPM method
-    ./install-opentofu.sh --install-method rpm
-
-    # Clean up the installer script
-    rm -f install-opentofu.sh
-
+    if [[ "$OS" == "ubuntu" ]]; then
+        fix_yarn_key_if_needed || true
+        sudo apt-get update -y
+        sudo apt-get install -y uuid-runtime jq || { echo "Package installation failed. Exiting."; exit 1; }
+        curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh || { echo "OpenTofu installer download failed. Exiting."; exit 1; }
+        chmod +x install-opentofu.sh
+        ./install-opentofu.sh --install-method deb
+        rm -f install-opentofu.sh
+    else
+        sudo yum update -y
+        sudo yum install -y yum-utils uuid jq || { echo "Package installation failed. Exiting."; exit 1; }
+        curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh || { echo "OpenTofu installer download failed. Exiting."; exit 1; }
+        chmod +x install-opentofu.sh
+        ./install-opentofu.sh --install-method rpm
+        rm -f install-opentofu.sh
+    fi
     echo "OpenTofu installation complete."
 }
 
 # Function to install jq, envsubst, and bash-completion
 install_utilities() {
     echo "Installing utilities..."
-    sudo yum -y install jq gettext bash-completion moreutils || { echo "Utilities installation failed. Exiting."; exit 1; }
+    if [[ "$OS" == "ubuntu" ]]; then
+        fix_yarn_key_if_needed || true
+        sudo apt-get update -y
+        sudo apt-get install -y jq gettext-base bash-completion moreutils || { echo "Utilities installation failed. Exiting."; exit 1; }
+    else
+        sudo yum -y install jq gettext bash-completion moreutils || { echo "Utilities installation failed. Exiting."; exit 1; }
+    fi
     echo "Utilities installation complete."
 }
 
@@ -111,16 +159,20 @@ install_kubeseal() {
 }
 
 # Function to check if a binary is installed
+# OpenTofu installs as 'tofu', not 'opentofu'
 check_binary() {
-    if ! command -v $1 &> /dev/null; then
-        echo "$1 not found. Installing $1..."
-        if [ "$1" = "jq" ] || [ "$1" = "envsubst" ]; then
+    local bin="$1"
+    local check_cmd="$bin"
+    [ "$bin" = "opentofu" ] && check_cmd="tofu"
+    if ! command -v $check_cmd &> /dev/null; then
+        echo "$bin not found. Installing $bin..."
+        if [ "$bin" = "jq" ] || [ "$bin" = "envsubst" ]; then
             install_utilities
         else
-            install_$1
+            install_$bin
         fi
     else
-        echo "$1 is already installed."
+        echo "$bin is already installed."
     fi
 }
 
@@ -142,8 +194,8 @@ else
 fi
 
 # OS compatibility check
-if [[ "$OS" != "amzn" && "$OS" != "centos" && "$OS" != "rhel" ]]; then
-    echo "Unsupported OS: $OS. This script supports Amazon Linux, CentOS, or RHEL only."
+if [[ "$OS" != "amzn" && "$OS" != "centos" && "$OS" != "rhel" && "$OS" != "ubuntu" ]]; then
+    echo "Unsupported OS: $OS. This script supports Amazon Linux, CentOS, RHEL, or Ubuntu only."
     exit 1
 fi
 
@@ -152,6 +204,7 @@ echo "Checking and installing required binaries..."
 check_binary aws
 check_binary eksctl
 check_binary kubectl
+check_binary terraform
 check_binary opentofu
 check_binary jq
 check_binary yq

@@ -89,3 +89,39 @@ terraform destroy --auto-approve
 
 This project is licensed under the GPL-3.0. See the LICENSE file for details.
 
+
+## Credits
+
+
+- The CloudFormation templates have been adapted for use in the **peachycloudsecurity** EKS workshop.
+- [AWS-Samples](https://github.com/aws-samples/eks-workshop-v2/) under the [Apache-2.0 license](https://github.com/aws-samples/eks-workshop-v2/?tab=Apache-2.0-1-ov-file#readme)
+- Thanks to [coder team](https://github.com/coder/deploy-code-server)
+- Thanks to [AWS eks-workshop-v2](https://github.com/aws-samples/eks-workshop-v2/blob/main/lab/scripts/installer.sh)
+
+
+This project is maintained by the peachycloudsecurity. Contributions are welcome!
+
+For more information, visit our [GitHub page](https://peachycloudsecurity.com/).
+
+## [Peachycloud Security](https://www.youtube.com/@peachycloudsecurity)
+
+[Hands-On Multi-Cloud & Cloud-Native Security Education on Youtube](https://www.youtube.com/@peachycloudsecurity)
+
+Created by The Shukla Duo (Anjali & Divyanshu), this tool is part of our mission to make cloud security accessible through practical, hands-on learning. We specialize in AWS, GCP, Kubernetes security, and DevSecOps practices.
+
+### Learn & Grow
+
+Explore our educational content and training programs:
+
+[YouTube Channel](https://www.youtube.com/@peachycloudsecurity) | [Website](https://peachycloudsecurity.com) | [1:1 Consultations](https://topmate.io/peachycloudsecurity)
+
+Learn cloud security through hands-on labs, real-world scenarios, and practical tutorials covering GCP & AWS, GKE & EKS, Kubernetes, Containers, DevSecOps, and Threat Modeling.
+
+### Support Our Work
+
+If this tool helps you secure your infrastructure, consider supporting our educational mission:
+
+[Sponsor on GitHub](https://github.com/sponsors/peachycloudsecurity)
+
+Your support helps us create more free educational content and security tools for the community.
+
